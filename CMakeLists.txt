@@ -3,6 +3,7 @@ project(bbb_artnet_dmx LANGUAGES CXX)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(Juce)
 link_libraries(juce)

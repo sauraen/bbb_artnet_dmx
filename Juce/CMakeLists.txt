@@ -15,7 +15,6 @@ add_definitions(-DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_STANDALONE_APPLI
 include_directories(.)
 
 add_library(juce STATIC ${JUCE_HEADER_FILES} ${JUCE_SOURCE_FILES})
-target_compile_features(juce PUBLIC cxx_std_11)
 
 find_library(PTHREAD_LIB pthread)
 find_library(DL_LIB dl)
