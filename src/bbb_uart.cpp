@@ -1,20 +1,22 @@
 #include<iostream>
 #include<unistd.h>
 #include<fcntl.h>
-#include<termios.h>
+#include<sys/ioctl.h>
+#include<asm/termbits.h>
 #include<string.h>
 
 #include "bbb_uart.h"
 
 using namespace std;
 
-UART::UART(int num, int baud, UART_TYPE type) {
+UART::UART(int num, int baud, UART_TYPE type, bool twoStopBitsBool) {
     uartNum = num;    
     baudRate = baud;
     uartType = type;
-
+    twoStopBits = twoStopBitsBool;
+    
+    initFlag = 0; //init is 0 meaning not yet initialized, shouldnt be able to write/read
     uartID = -1;
-    uartTerm = NULL;
     uartType = TX; //setting defaults
 }
 
@@ -22,110 +24,71 @@ UART::UART(int num, int baud, UART_TYPE type) {
  * Function to initialize and error check UART setup
  */
 int UART::init() {
-    int baud;
     
     string name = "/dev/tty0";
     string namepath = name + to_string(uartNum);
-    
-    /* Checking if correct baudRate was input. Some values that are acceptable in the termios structure
-     * have been ommitted. */
-    switch (baudRate) {
-        case 1200:
-            baud = B1200;
-            break;
-        
-        case 1800:
-            baud = B1800;
-            break;
-        
-        case 2400:
-            baud = B2400;
-            break;
-
-        case 4800:
-            baud = B4800;
-            break;
-
-        case 9600:
-            baud = B9600;
-            break;
-
-        case 19200:
-            baud = B19200;
-            break;
-
-        case 38400:
-            baud = B38400;
-            break;
-
-        case 57600:
-            baud = B57600;
-            break;
-
-        case 115200:
-            baud = B115200;
-            break;
-
-        case 230400:
-            baud = B230400;
-            break;
-
-        default:
-            cerr << "UART" << uartNum << " Was given incorrect, or not accounted for, baudRate" << endl;
-            return -1;
-    }
     
     /* Open devide in appropriate mode */
     if (uartType == TX) {
         uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY);
     }
     else if (uartType == RX) {
-        uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY); //TODO
+        uartID = open(namepath.c_str(), O_RDONLY | O_NOCTTY | O_NDELAY);
     }
     else {
-        uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY); //TODO
+        uartID = open(namepath.c_str(), O_RDWR | O_NOCTTY | O_NDELAY); 
     }
     /* Checking if opened correctly */
     if (uartID < 0) {
-        cerr << "UART" << uartNum << " could not be opened" << endl;
+        cerr << "INIT: UART" << uartNum << " could not be opened" << endl;
         return -1;
     }
     
-    /* Initializing termios and err checking mem space */
-    uartTerm = (struct termios*) calloc(sizeof(struct termios), 1);
+    /* Struc to be populated with uart data */
+    struct termios2 uartTerm;
     
-    if (uartTerm == NULL) {
-        cerr << "UART" << uartNum << " mem alloc error for termios struct" << endl;
+    /* getting info on uart */
+    if (ioctl(uartID, TCGETS2, &uartTerm) < 0) {
+        cerr << "INIT: UART" << uartNum << " Termios2 getting failure" << endl;
         return -1;
     }
     
-    /* Initalize params of uartTerm associated with file */
-    tcgetattr(uartID, uartTerm);
-    
-    /* Setting c_cflag (control flag) for term */
+    uartTerm.c_cflag &= ~CBAUD; //Ignoring baudrate
+    uartTerm.c_cflag |= BOTHER; //termios2, other baud rate
+    uartTerm.c_cflag |= CLOCAL; //Ignore control lines
+
     if (uartType == TX) {
-        uartTerm->c_cflag = baud | CS8 | CLOCAL | CSTOPB;
+        uartTerm.c_ospeed = baudRate; //Setting output rate
+    }
+    else if (uartType == RX) {
+        uartTerm.c_cflag |= CREAD; //Reading
+        uartTerm.c_ispeed = baudRate; //setting input rate
     }
     else {
-        uartTerm->c_cflag = baud | CS8 | CREAD | CLOCAL | CSTOPB;
+        uartTerm.c_cflag |= CREAD; //Reading and writing
+        uartTerm.c_ospeed = baudRate; 
+        uartTerm.c_ispeed = baudRate; //Setting output and input speeds
+    }
+    if (twoStopBits == true) {
+        uartTerm.c_cflag |= CSTOPB; //two stop bits set
     }
     
-    /* Setting c_iflag (input) */
-    uartTerm->c_iflag = IGNPAR;
+    if (ioctl(uartID, TCSETS2, &uartTerm) < 0) {
+        cerr << "INIT: UART" << uartNum << " Termios2 setting failure" << endl;
+        return -1;
+    }
     
-    /* Flush any outlying data */
-    tcflush(uartID, TCIOFLUSH);
-    
-    /* Update file with new settings */
-    tcsetattr(uartID, TCSANOW, uartTerm);
-
-    /* NOTE canoncal mode set by default */
+    initFlag = 1; //init complete, recoginizing
 
     return 0;
 }
 
 int UART::uart_write(unsigned char* data, int len) {
-    
+    if (initFlag != 1) {
+        cerr << "uart_write: Uart" << uartNum << " has not been initiated." << endl;
+        return -1;
+    }
+
     if (write(uartID, &data, len) < 0) {
         return -1;
     }
@@ -135,6 +98,11 @@ int UART::uart_write(unsigned char* data, int len) {
 
 int UART::uart_read(void* buffer, int len) {
     int count;
+    
+    if (initFlag != 1) {
+        cerr << "uart_read: Uart" << uartNum << " has not been initiated." << endl;
+        return -1;
+    }
 
     if ((count = read(uartID, buffer, len) < 0)) {
         cerr << "UART" << uartNum << " Couldnt read data" << endl;
@@ -153,12 +121,7 @@ int UART::getID() {
     return uartID;
 }
 
-UART::~UART() {
-    
-    if (uartTerm != NULL) {
-        free((void*) uartTerm);
-    }
-    
+UART::~UART() {     
     if (uartID != -1) {     
         close(uartID);
     }

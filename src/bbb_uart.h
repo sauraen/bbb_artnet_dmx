@@ -1,8 +1,6 @@
 #ifndef UART_BBB
 #define UART_BBB
 
-#include <termios.h>
-
 enum UART_TYPE {TX = 0, RX = 1, BOTH = 2};
 
 class UART {
@@ -10,12 +8,13 @@ class UART {
         int uartNum;
         int baudRate;
         int uartID;
+        int initFlag;
+        bool twoStopBits;
         UART_TYPE uartType;
-        struct termios* uartTerm;
         
 
     public:
-        UART(int uartNum, int baudRate, UART_TYPE uartType);
+        UART(int uartNum, int baudRate, UART_TYPE uartType, bool twoStopBits);
         
         int init();
 
