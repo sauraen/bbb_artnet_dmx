@@ -22,6 +22,7 @@ UART::UART(int num, int baud, UART_TYPE type, bool twoStopBitsBool) {
 
 /*
  * Function to initialize and error check UART setup
+ * BUG: Maybe Open, set options, close, then reopen to operate normally
  */
 int UART::init() {
     
@@ -73,6 +74,7 @@ int UART::init() {
         uartTerm.c_cflag |= CSTOPB; //two stop bits set
     }
     
+    /* Writing termios options to uart */
     if (ioctl(uartID, TCSETS2, &uartTerm) < 0) {
         cerr << "INIT: UART" << uartNum << " Termios2 setting failure" << endl;
         return -1;
@@ -83,20 +85,20 @@ int UART::init() {
     return 0;
 }
 
-int UART::uart_write(unsigned char* data, int len) {
+int UART::uart_write(void* data, size_t len) {
     if (initFlag != 1) {
         cerr << "uart_write: Uart" << uartNum << " has not been initiated." << endl;
         return -1;
     }
 
-    if (write(uartID, &data, len) < 0) {
+    if (write(uartID, data, len) < 0) {
         return -1;
     }
 
     return 0;
 }
 
-int UART::uart_read(void* buffer, int len) {
+int UART::uart_read(void* buffer, size_t len) {
     int count;
     
     if (initFlag != 1) {

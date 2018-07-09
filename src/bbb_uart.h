@@ -18,17 +18,15 @@ class UART {
         
         int init();
 
-        int uart_write(unsigned char* data, int len);
+        int uart_write(void* data, size_t len);
         
-        int uart_read(void* buffer, int len);
+        int uart_read(void* buffer, size_t len);
 
         int status();
         
         int getID();
-
-        ~UART();
-
         
+        ~UART();
 };
 
 #endif
