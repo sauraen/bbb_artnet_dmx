@@ -21,6 +21,8 @@ class UART {
         int uart_write(void* data, size_t len);
         
         int uart_read(void* buffer, size_t len);
+        
+        int dmx_write(void* data, size_t len);
 
         int status();
         

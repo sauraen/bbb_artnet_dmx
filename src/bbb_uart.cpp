@@ -114,6 +114,28 @@ int UART::uart_read(void* buffer, size_t len) {
     return count;
 }
 
+int UART::dmx_write(void* data, size_t len) {
+    
+    if (initFlag != 1) {
+        cerr << "uart_write: Uart" << uartNum << " has not been initiated." << endl;
+        return -1;
+    }
+    
+    if (ioctl(uartID, TCSBRK, 100) < 0) {
+        cerr << "uart_dmxWrite: Uart" << uartNum << " Break failed" << endl;
+        return -1;
+    }
+    if (ioctl(uartID, TCXONC, 100) < 0) {
+        cerr << "uart_dmxWrite: Uart" << uartNum << " MAB failed" << endl;
+        return -1;
+    }
+
+    if (write(uartID, data, len) < 0) {
+        return -1;
+    }
+
+    return 0;
+}
 int UART::status() {
 
     return 0;
