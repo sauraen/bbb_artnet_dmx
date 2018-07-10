@@ -26,7 +26,7 @@ UART::UART(int num, int baud, UART_TYPE type, bool twoStopBitsBool) {
  */
 int UART::init() {
     
-    string name = "/dev/tty0";
+    string name = "/dev/ttyO";
     string namepath = name + to_string(uartNum);
     
     /* Open devide in appropriate mode */
@@ -121,14 +121,19 @@ int UART::dmx_write(void* data, size_t len) {
         return -1;
     }
     
-    if (ioctl(uartID, TCSBRK, 100) < 0) {
-        cerr << "uart_dmxWrite: Uart" << uartNum << " Break failed" << endl;
-        return -1;
-    }
-    if (ioctl(uartID, TCXONC, 100) < 0) {
+    if( ioctl(uartID, TIOCSBRK) < 0) {
         cerr << "uart_dmxWrite: Uart" << uartNum << " MAB failed" << endl;
         return -1;
     }
+    
+    usleep(100);
+
+    if( ioctl(uartID, TIOCCBRK) < 0) {
+        cerr << "uart_dmxWrite: Uart" << uartNum << " MAB failed" << endl;
+        return -1;
+    }
+    
+    usleep(15);
 
     if (write(uartID, data, len) < 0) {
         return -1;

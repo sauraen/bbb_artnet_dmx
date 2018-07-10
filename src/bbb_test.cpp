@@ -11,7 +11,7 @@ int main() {
     const char* msg = "Hello this is a test";
 
     while(1) {
-        if (test.uart_write((void*) msg, strlen(msg)) < 0) {
+        if (test.dmx_write((void*) msg, strlen(msg)) < 0) {
             break;
         }
         
