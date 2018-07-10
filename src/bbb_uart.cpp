@@ -1,44 +1,49 @@
-#include<iostream>
-#include<unistd.h>
-#include<fcntl.h>
-#include<sys/ioctl.h>
-#include<asm/termbits.h>
-#include<string.h>
+#include <iostream>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <asm/termbits.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "bbb_uart.h"
 
 using namespace std;
 
-UART::UART(int num, int baud, UART_TYPE type, bool twoStopBitsBool) {
+UART::UART(int num) {
     uartNum = num;    
-    baudRate = baud;
-    uartType = type;
-    twoStopBits = twoStopBitsBool;
-    
+    baudRate = DMX_BAUD;
     initFlag = 0; //init is 0 meaning not yet initialized, shouldnt be able to write/read
-    uartID = -1;
-    uartType = TX; //setting defaults
+    uartID = -1; //setting to invalid ID as default if file not opened
 }
 
-/*
- * Function to initialize and error check UART setup
- * BUG: Maybe Open, set options, close, then reopen to operate normally
- */
-int UART::init() {
+int UART::init() {   
+    FILE* capeFile;
+
+    string namepath = UART_PATH + to_string(uartNum);
     
-    string name = "/dev/ttyO";
-    string namepath = name + to_string(uartNum);
+    if((capeFile = fopen(SLOTS_PATH, "a")) < 0) {
+        cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+        cerr << "Is path in bbb_uart.h correct for your device?" << endl;
+        return -1;
+    }
     
-    /* Open devide in appropriate mode */
-    if (uartType == TX) {
-        uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY);
+    switch(uartNum) {
+        case 1: 
+            if(fwrite("BB-UART1", 1, 9, capeFile) < 0) {
+                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+                return -1;
+            }
+            break;
+        
+        default:
+            cerr << "INIT: Invalid uartnum entered" << endl;
+            return -1;
     }
-    else if (uartType == RX) {
-        uartID = open(namepath.c_str(), O_RDONLY | O_NOCTTY | O_NDELAY);
-    }
-    else {
-        uartID = open(namepath.c_str(), O_RDWR | O_NOCTTY | O_NDELAY); 
-    }
+
+    /* Opening devide as a transmitting */
+    uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY);
+    
     /* Checking if opened correctly */
     if (uartID < 0) {
         cerr << "INIT: UART" << uartNum << " could not be opened" << endl;
@@ -58,21 +63,8 @@ int UART::init() {
     uartTerm.c_cflag |= BOTHER; //termios2, other baud rate
     uartTerm.c_cflag |= CLOCAL; //Ignore control lines
 
-    if (uartType == TX) {
-        uartTerm.c_ospeed = baudRate; //Setting output rate
-    }
-    else if (uartType == RX) {
-        uartTerm.c_cflag |= CREAD; //Reading
-        uartTerm.c_ispeed = baudRate; //setting input rate
-    }
-    else {
-        uartTerm.c_cflag |= CREAD; //Reading and writing
-        uartTerm.c_ospeed = baudRate; 
-        uartTerm.c_ispeed = baudRate; //Setting output and input speeds
-    }
-    if (twoStopBits == true) {
-        uartTerm.c_cflag |= CSTOPB; //two stop bits set
-    }
+    uartTerm.c_ospeed = baudRate; //Setting output rate
+    uartTerm.c_cflag |= CSTOPB; //two stop bits set
     
     /* Writing termios options to uart */
     if (ioctl(uartID, TCSETS2, &uartTerm) < 0) {
@@ -85,69 +77,43 @@ int UART::init() {
     return 0;
 }
 
-int UART::uart_write(void* data, size_t len) {
-    if (initFlag != 1) {
-        cerr << "uart_write: Uart" << uartNum << " has not been initiated." << endl;
-        return -1;
-    }
-
-    if (write(uartID, data, len) < 0) {
-        return -1;
-    }
-
-    return 0;
-}
-
-int UART::uart_read(void* buffer, size_t len) {
-    int count;
-    
-    if (initFlag != 1) {
-        cerr << "uart_read: Uart" << uartNum << " has not been initiated." << endl;
-        return -1;
-    }
-
-    if ((count = read(uartID, buffer, len) < 0)) {
-        cerr << "UART" << uartNum << " Couldnt read data" << endl;
-        return -1;
-    }
-    
-    return count;
-}
-
 int UART::dmx_write(void* data, size_t len) {
-    
+    char zeroByte = 0x00;
+
     if (initFlag != 1) {
-        cerr << "uart_write: Uart" << uartNum << " has not been initiated." << endl;
+        cerr << "dmx_write: Uart" << uartNum << " has not been initiated." << endl;
         return -1;
     }
     
+    /* Send 0s to indicate break */
     if( ioctl(uartID, TIOCSBRK) < 0) {
-        cerr << "uart_dmxWrite: Uart" << uartNum << " MAB failed" << endl;
+        cerr << "dmx_write: Uart" << uartNum << " start of break failed" << endl;
         return -1;
     }
     
-    usleep(100);
-
+    usleep(100); //wait 100 micro seconds to ensure proper break times before msg
+    
+    /* Stop sending, now sending 1s as default */
     if( ioctl(uartID, TIOCCBRK) < 0) {
-        cerr << "uart_dmxWrite: Uart" << uartNum << " MAB failed" << endl;
+        cerr << "uart_dmxWrite: Uart" << uartNum << " end of break failed" << endl;
         return -1;
     }
     
-    usleep(15);
-
+    usleep(15); //wait 15 micro seconds to ensure propber MAB hold times
+    
+    /* Writes beginning byte of 0 */
+    if (write(uartID, &zeroByte, 1) < 0) {
+        cerr << "dmx_write: Uart" << uartNum << " failed to write" << endl;
+        return -1;
+    }
+    
+    /* Writes up to 512 bytes of the actual packet, 512 max not checked */
     if (write(uartID, data, len) < 0) {
+        cerr << "dmx_write: Uart" << uartNum << " failed to write" << endl;
         return -1;
     }
 
     return 0;
-}
-int UART::status() {
-
-    return 0;
-}
-
-int UART::getID() {
-    return uartID;
 }
 
 UART::~UART() {     
