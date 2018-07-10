@@ -5,16 +5,16 @@
 
 int main() {
         
-    UART test = UART(4, 250000, TX, true);
+    UART test = UART(4);
     test.init();
 
-    const char* msg = "Hello this is a test";
+    char msg[512];
+    memset(msg, 0, 512);
 
     while(1) {
-        if (test.dmx_write((void*) msg, strlen(msg)) < 0) {
+        if (test.dmx_write((void*) msg, 512) < 0) {
             break;
         }
-        
         usleep(1000);
     }
 

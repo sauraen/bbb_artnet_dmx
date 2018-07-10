@@ -19,27 +19,62 @@ UART::UART(int num) {
 
 int UART::init() {   
     FILE* capeFile;
-
     string namepath = UART_PATH + to_string(uartNum);
     
-    if((capeFile = fopen(SLOTS_PATH, "a")) < 0) {
+    /* Open slots path to load the appropriate caped */
+    if((capeFile = fopen(SLOTS_PATH, "w")) < 0) {
         cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
         cerr << "Is path in bbb_uart.h correct for your device?" << endl;
         return -1;
     }
     
+    /* Load uart depending on the number, also checks if correct uartnum input */
     switch(uartNum) {
         case 1: 
             if(fwrite("BB-UART1", 1, 9, capeFile) < 0) {
                 cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
                 return -1;
             }
+            fclose(capeFile);
+            break;
+
+        case 2: 
+            if(fwrite("BB-UART2", 1, 9, capeFile) < 0) {
+                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+                return -1;
+            }
+            fclose(capeFile);
             break;
         
+        case 3: 
+            if(fwrite("BB-UART3", 1, 9, capeFile) < 0) {
+                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+                return -1;
+            }
+            fclose(capeFile);
+            break;
+        
+        case 4: 
+            if(fwrite("BB-UART4", 1, 9, capeFile) < 0) {
+                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+                return -1;
+            }
+            fclose(capeFile);
+            break;
+
+        case 5: 
+            if(fwrite("BB-UART5", 1, 9, capeFile) < 0) {
+                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
+                return -1;
+            }
+            fclose(capeFile);
+            break;
+
         default:
             cerr << "INIT: Invalid uartnum entered" << endl;
             return -1;
     }
+    
 
     /* Opening devide as a transmitting */
     uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY);
