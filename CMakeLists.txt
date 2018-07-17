@@ -9,9 +9,11 @@ add_subdirectory(Juce)
 link_libraries(juce)
 include_directories(${JUCE_INCLUDE})
 
-set(HEADER_FILES )
+set(HEADER_FILES
+    src/bbb_uart.h)
 set(SOURCE_FILES
-    src/main.cpp)
-    
+    src/main.cpp
+    src/bbb_uart.cpp)
+
 add_executable(ArtnetDMX ${HEADER_FILES} ${SOURCE_FILES})
 

@@ -1,11 +1,14 @@
 #ifndef UART_BBB
 #define UART_BBB
 
+#include "juce.h"
+
 #define DMX_BAUD 250000
 #define UART_PATH "/dev/ttyO"
 #define SLOTS_PATH "/sys/devices/platform/bone_capemgr/slots"
 
-class UART {
+class uArt
+{
     
     private:
         
@@ -19,7 +22,7 @@ class UART {
         /*
          * Constructer 
          */
-        UART(int uartNum);
+        uArt(int uartNum);
         
         /* 
          * Initializes Uart port
@@ -40,14 +43,32 @@ class UART {
          * to satisfy DMX packet framing specifications.
          * After sends the first byte of 0s, then sends main packet of up to 512 bytes.  
          */
-        int dmx_write(void* data, size_t len);
+        int dmx_write(uint8* data, size_t len);
         
         /*
          * Deconstructor
          * 
          * Closes uArt device. 
          */
-        ~UART();
+        ~uArt();
+};
+
+class uArtThread : public Thread
+{
+
+    public:
+        uArtThread(String name, uint8* msgBuffer);
+        
+        virtual ~uArtThread();
+
+        virtual void run() override;
+
+        ReadWriteLock getLock();
+    
+    private:
+        uint8* buffer;
+        ReadWriteLock myLock;
+        uArt uart;
 };
 
 #endif

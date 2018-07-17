@@ -1,10 +1,24 @@
 #include <iostream>
+#include <string>
 
-#include "juce.h"
+
+#include "bbb_uart.h"
 
 int main()
-{
-    String s = "Hello world!";
-    std::cout << s << "\n";
+{   
+    String name = "BBB";
+    uint8 msg[512];
+    
+    
+    uArtThread th(name, msg, 4);
+    
+    Thread::sleep(1000);
+
+    
+    
     return 0;
 }
+
+
+
+

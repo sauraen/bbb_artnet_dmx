@@ -10,14 +10,14 @@
 
 using namespace std;
 
-UART::UART(int num) {
+uArt::uArt(int num) {
     uartNum = num;    
     baudRate = DMX_BAUD;
     initFlag = 0; //init is 0 meaning not yet initialized, shouldnt be able to write/read
     uartID = -1; //setting to invalid ID as default if file not opened
 }
 
-int UART::init() {   
+int uArt::init() {   
     FILE* capeFile;
     string namepath = UART_PATH + to_string(uartNum);
     
@@ -112,7 +112,7 @@ int UART::init() {
     return 0;
 }
 
-int UART::dmx_write(void* data, size_t len) {
+int uArt::dmx_write(uint8* data, size_t len) {
     char zeroByte = 0x00;
 
     if (initFlag != 1) {
@@ -151,9 +151,43 @@ int UART::dmx_write(void* data, size_t len) {
     return 0;
 }
 
-UART::~UART() {     
+uArt::~uArt() {     
     if (uartID != -1) {     
         close(uartID);
     }
 }
 
+uArtThread::uArtThread(String name, uint8* msgBuffer, int uartNumber) 
+: Thread(name, 0), buffer(msgBuffer)
+{   
+    uart = uArt(uartNumber);
+    uart.init();
+    startThread();
+}
+
+uArtThread::~uArtThread()
+{
+    stopThread(50); //forcibly killed after 50 milliseconds
+}
+
+uArtThread::run() {
+    
+    while (!threadShouldExit())
+    {
+        wait(100);
+        
+        do 
+        {
+            const ScopedReadLock myScopedLock(myLock);
+
+            uart.dmxWrite()
+        }
+
+        std::cout << "Hello!" << std::endl;
+    }
+}
+
+ReadWriteLock uArtThread::getLock()
+{
+    return myLock;
+}
