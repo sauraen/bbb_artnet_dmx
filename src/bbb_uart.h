@@ -57,18 +57,22 @@ class uArtThread : public Thread
 {
 
     public:
-        uArtThread(String name, uint8* msgBuffer);
+        uArtThread(String name, uint8* msgBuffer, int uartNumber);
         
         virtual ~uArtThread();
+        
+        int init();
 
         virtual void run() override;
 
-        ReadWriteLock getLock();
-    
     private:
+        String name;
+        int uartNum;
         uint8* buffer;
-        ReadWriteLock myLock;
         uArt uart;
+
+    public:
+        ReadWriteLock myLock;
 };
 
 #endif

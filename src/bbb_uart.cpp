@@ -157,20 +157,31 @@ uArt::~uArt() {
     }
 }
 
-uArtThread::uArtThread(String name, uint8* msgBuffer, int uartNumber) 
-: Thread(name, 0), buffer(msgBuffer)
-{   
-    uart = uArt(uartNumber);
-    uart.init();
-    startThread();
+uArtThread::uArtThread(String threadName, uint8* msgBuffer, int uartNumber) 
+: Thread(threadName, 0), uart(uArt(uartNumber))
+{
+    buffer = msgBuffer;
+    name = threadName;
+    uartNum = uartNumber;
 }
 
+int uArtThread::init()
+{
+    if(uart.init() == -1)
+    {
+        std::cerr << "UART: " << name << " Failed to initialize" << std::endl;
+        return -1;
+    }
+    
+    startThread();
+    return 0;
+}
 uArtThread::~uArtThread()
 {
     stopThread(50); //forcibly killed after 50 milliseconds
 }
 
-uArtThread::run() {
+void uArtThread::run() {
     
     while (!threadShouldExit())
     {
@@ -180,14 +191,13 @@ uArtThread::run() {
         {
             const ScopedReadLock myScopedLock(myLock);
 
-            uart.dmxWrite()
-        }
+            if (uart.dmx_write(buffer, 512) == -1) {
+                std::cerr << "uartThread:run():" << name << ": failed to write" << std::endl;
+            }
+
+        } while(false);
 
         std::cout << "Hello!" << std::endl;
     }
 }
 
-ReadWriteLock uArtThread::getLock()
-{
-    return myLock;
-}
