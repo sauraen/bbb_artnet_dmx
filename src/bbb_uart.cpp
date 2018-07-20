@@ -18,64 +18,8 @@ uArt::uArt(int num) {
 }
 
 int uArt::init() {   
-    FILE* capeFile;
     string namepath = UART_PATH + to_string(uartNum);
     
-    /* Open slots path to load the appropriate caped */
-    if((capeFile = fopen(SLOTS_PATH, "w")) < 0) {
-        cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-        cerr << "Is path in bbb_uart.h correct for your device?" << endl;
-        return -1;
-    }
-    
-    /* Load uart depending on the number, also checks if correct uartnum input */
-    switch(uartNum) {
-        case 1: 
-            if(fwrite("BB-UART1", 1, 9, capeFile) < 0) {
-                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-                return -1;
-            }
-            fclose(capeFile);
-            break;
-
-        case 2: 
-            if(fwrite("BB-UART2", 1, 9, capeFile) < 0) {
-                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-                return -1;
-            }
-            fclose(capeFile);
-            break;
-        
-        case 3: 
-            if(fwrite("BB-UART3", 1, 9, capeFile) < 0) {
-                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-                return -1;
-            }
-            fclose(capeFile);
-            break;
-        
-        case 4: 
-            if(fwrite("BB-UART4", 1, 9, capeFile) < 0) {
-                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-                return -1;
-            }
-            fclose(capeFile);
-            break;
-
-        case 5: 
-            if(fwrite("BB-UART5", 1, 9, capeFile) < 0) {
-                cerr << "INIT: UART" << uartNum << " capemgr could not be opened" << endl;
-                return -1;
-            }
-            fclose(capeFile);
-            break;
-
-        default:
-            cerr << "INIT: Invalid uartnum entered" << endl;
-            return -1;
-    }
-    
-
     /* Opening devide as a transmitting */
     uartID = open(namepath.c_str(), O_WRONLY | O_NOCTTY | O_NDELAY);
     
@@ -97,9 +41,9 @@ int uArt::init() {
     uartTerm.c_cflag &= ~CBAUD; //Ignoring baudrate
     uartTerm.c_cflag |= BOTHER; //termios2, other baud rate
     uartTerm.c_cflag |= CLOCAL; //Ignore control lines
-
-    uartTerm.c_ospeed = baudRate; //Setting output rate
     uartTerm.c_cflag |= CSTOPB; //two stop bits set
+    
+    uartTerm.c_ospeed = baudRate; //Setting output rate
     
     /* Writing termios options to uart */
     if (ioctl(uartID, TCSETS2, &uartTerm) < 0) {
@@ -113,7 +57,7 @@ int uArt::init() {
 }
 
 int uArt::dmx_write(uint8* data, size_t len) {
-    char zeroByte = 0x00;
+    uint8 zeroByte = 0x00;
 
     if (initFlag != 1) {
         cerr << "dmx_write: Uart" << uartNum << " has not been initiated." << endl;
@@ -158,7 +102,7 @@ uArt::~uArt() {
 }
 
 uArtThread::uArtThread(String threadName, uint8* msgBuffer, int uartNumber) 
-: Thread(threadName, 0), uart(uArt(uartNumber))
+: Thread(threadName, 0), uart(uartNumber)
 {
     buffer = msgBuffer;
     name = threadName;
@@ -185,9 +129,8 @@ void uArtThread::run() {
     
     while (!threadShouldExit())
     {
-        wait(100);
+        wait(10);
         
-        do 
         {
             const ScopedReadLock myScopedLock(myLock);
 
@@ -195,9 +138,7 @@ void uArtThread::run() {
                 std::cerr << "uartThread:run():" << name << ": failed to write" << std::endl;
             }
 
-        } while(false);
-
-        std::cout << "Hello!" << std::endl;
+        }
     }
 }
 
