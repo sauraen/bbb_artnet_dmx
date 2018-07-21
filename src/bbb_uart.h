@@ -57,11 +57,13 @@ class uArtThread : public Thread
 {
 
     public:
-        uArtThread(String name, uint8* msgBuffer, int uartNumber);
+        uArtThread(String name, int uartNumber);
         
         virtual ~uArtThread();
         
         int init();
+	
+	void writeBuffer(uint8* data);	
 
         virtual void run() override;
 

@@ -38,11 +38,20 @@ int uArt::init() {
         return -1;
     }
     
+
+    uartTerm.c_cflag &= ~(CSIZE | PARENB);
+    uartTerm.c_cflag |= CS8;
+    
     uartTerm.c_cflag &= ~CBAUD; //Ignoring baudrate
     uartTerm.c_cflag |= BOTHER; //termios2, other baud rate
     uartTerm.c_cflag |= CLOCAL; //Ignore control lines
     uartTerm.c_cflag |= CSTOPB; //two stop bits set
     
+    
+    uartTerm.c_oflag &= ~OPOST;
+    uartTerm.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+   
+
     uartTerm.c_ospeed = baudRate; //Setting output rate
     
     /* Writing termios options to uart */
@@ -58,6 +67,7 @@ int uArt::init() {
 
 int uArt::dmx_write(uint8* data, size_t len) {
     uint8 zeroByte = 0x00;
+    data[0] = zeroByte;
 
     if (initFlag != 1) {
         cerr << "dmx_write: Uart" << uartNum << " has not been initiated." << endl;
@@ -80,11 +90,11 @@ int uArt::dmx_write(uint8* data, size_t len) {
     
     usleep(15); //wait 15 micro seconds to ensure propber MAB hold times
     
-    /* Writes beginning byte of 0 */
+    /* Writes beginning byte of 0 
     if (write(uartID, &zeroByte, 1) < 0) {
         cerr << "dmx_write: Uart" << uartNum << " failed to write" << endl;
         return -1;
-    }
+    }*/
     
     /* Writes up to 512 bytes of the actual packet, 512 max not checked */
     if (write(uartID, data, len) < 0) {
@@ -101,10 +111,10 @@ uArt::~uArt() {
     }
 }
 
-uArtThread::uArtThread(String threadName, uint8* msgBuffer, int uartNumber) 
-: Thread(threadName, 0), uart(uartNumber)
+uArtThread::uArtThread(String threadName, int uartNumber) 
+: Thread(threadName), uart(uartNumber)
 {
-    buffer = msgBuffer;
+    buffer = new uint8[513];
     name = threadName;
     uartNum = uartNumber;
 }
@@ -120,8 +130,20 @@ int uArtThread::init()
     startThread();
     return 0;
 }
+
+void uArtThread::writeBuffer(uint8* data) {
+    {
+	const ScopedReadLock myScopedLock(myLock);
+	buffer[0] = 0;
+
+	memcpy(&buffer[1], data, 512);
+    }
+}
+
+
 uArtThread::~uArtThread()
 {
+    delete[] buffer;
     stopThread(50); //forcibly killed after 50 milliseconds
 }
 
@@ -133,12 +155,13 @@ void uArtThread::run() {
         
         {
             const ScopedReadLock myScopedLock(myLock);
-
-            if (uart.dmx_write(buffer, 512) == -1) {
+	
+            if (uart.dmx_write(buffer, 513) == -1) {
                 std::cerr << "uartThread:run():" << name << ": failed to write" << std::endl;
             }
 
         }
     }
 }
+
 
