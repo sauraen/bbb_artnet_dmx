@@ -62,7 +62,7 @@ class uArtThread : public Thread
         
         int init();
 	
-	void writeBuffer(uint8* data);	
+	    void writeBuffer(uint8* data, uint16 len=512);	
 
         virtual void run() override;
 

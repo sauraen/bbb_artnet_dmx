@@ -109,6 +109,7 @@ uArt::~uArt() {
     if (uartID != -1) {     
         close(uartID);
     }
+    std::cout << "Closing uart " << uartNum << "\n";
 }
 
 uArtThread::uArtThread(String threadName, int uartNumber) 
@@ -131,20 +132,20 @@ int uArtThread::init()
     return 0;
 }
 
-void uArtThread::writeBuffer(uint8* data) {
-    {
+void uArtThread::writeBuffer(uint8* data, uint16 len) {
+    
 	const ScopedReadLock myScopedLock(myLock);
 	buffer[0] = 0;
 
-	memcpy(&buffer[1], data, 512);
-    }
+	memcpy(&buffer[1], data, len);
+    
 }
 
 
 uArtThread::~uArtThread()
 {
     delete[] buffer;
-    stopThread(50); //forcibly killed after 50 milliseconds
+    stopThread(100); //forcibly killed after 100 milliseconds
 }
 
 void uArtThread::run() {
