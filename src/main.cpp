@@ -2,7 +2,6 @@
 #include <string>
 #include <cstring>
 
-#include "bbb_uart.h"
 #include "artnetNode.h"
 
 int main()

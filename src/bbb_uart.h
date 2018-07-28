@@ -1,5 +1,4 @@
-#ifndef UART_BBB
-#define UART_BBB
+#pragma once
 
 #include "juce.h"
 
@@ -76,5 +75,3 @@ class uArtThread : public Thread
     public:
         ReadWriteLock myLock;
 };
-
-#endif

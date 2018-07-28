@@ -1,3 +1,5 @@
+#pragma once
+
 #include <juce.h>
 #include "bbb_uart.h"
 
