@@ -64,7 +64,7 @@ class uArtThread : public Thread
 	
 	    void writeBuffer(uint8* data, uint16 len=512);	
         
-        void copyBuffer(uint* destBuf, uint16 len=512);
+        void copyBuffer(uint8* destBuf, uint16 len=512);
 
         virtual void run() override;
         
