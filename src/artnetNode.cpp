@@ -172,7 +172,14 @@ namespace artnetNode {
         for(int i = 0; i < 4; i++) delete uthreads[i];
     }
 
-    
+    void copyUniBuf(uint8* destBuf, uint16 len, uint16 universeNum) {
+        if (universeNum < 0 || universeNum > 3) {
+            cout << "copyUniBuf: invalid universe num\n";
+            return;
+        }
+
+        uthreads[universeNum]->copyBuffer(destBuf, len);     
+    }
 
 
 }
