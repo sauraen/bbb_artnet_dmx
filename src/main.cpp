@@ -12,12 +12,12 @@ void printBuf(uint8* buf) {
     
     printf("    ");
     for (int i = 0; i < 16; i++) {
-        printf("%04d ", i);
+        printf("%02d ", i);
     }
     
     std::cout << "\n";
 
-    for (int i = 0; i < 116; i++) {
+    for (int i = 0; i < ((16 * 3) + 3); i++) {
         std::cout << "-";
     }
     
@@ -28,7 +28,7 @@ void printBuf(uint8* buf) {
         printf("%03d|", (i * 16));
 
         for(int j = 0; j < 16; j++) {
-            printf("0x%02X ", (unsigned char) buf[currByte]);
+            printf("%02X ", (unsigned char) buf[currByte]);
             currByte++;
         }
         std::cout << "\n";
@@ -59,30 +59,15 @@ int main()
             continue;
         }
         
-        if (strcmp(line.c_str(), "0") == 0) {
-            artnetNode::copyUniBuf(dataBuf, 0);
+        if(line[1] == 0 && line[0] >= '0' && line[0] <= '3') {
+            artnetNode::copyUniBuf(dataBuf, line[0] - '0');  
             printBuf(dataBuf);
-        }
-        else if(strcmp(line.c_str(), "1") == 0) {
-            artnetNode::copyUniBuf(dataBuf, 1);
-            printBuf(dataBuf);
-        }
-        else if(strcmp(line.c_str(), "2") == 0) {
-            artnetNode::copyUniBuf(dataBuf, 2);
-            printBuf(dataBuf);
-        }
-        else if(strcmp(line.c_str(), "3") == 0) {
-            artnetNode::copyUniBuf(dataBuf, 3);
-            printBuf(dataBuf);
-        }
-        else if(strcmp(line.c_str(), "exit") == 0) {
-            
+        } else if(strcmp(line.c_str(), "exit") == 0) {
             std::cout << "\nExiting. . . \n";
             artnetNode::Finalize();
-            std::cout << ". . .Finished exiting\b";
+            std::cout << ". . .Finished exiting\n";
             break;
-        }
-        else {
+        } else {
             std::cout << "Unknown command, try again\n";
             continue;
         }

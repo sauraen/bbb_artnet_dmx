@@ -93,9 +93,20 @@ namespace artnetNode {
 
 				while(!threadShouldExit()) {
 					
-					dsocket.waitUntilReady(true, -1);
+                    int sockCheck = 0;
+
+                    while (sockCheck == 0) {
+
+					    sockCheck = dsocket.waitUntilReady(true, 10);
+
+                        
+					    if(threadShouldExit()) return;
+                    }
 					
-					if(threadShouldExit()) return;
+                    if (sockCheck < 0) {
+                        std::cout << "UDPListener waitUntilReady failed\n";
+                        return;
+                    }
 
 					int bytesRead = dsocket.read(buffer, 4096, false);
 					

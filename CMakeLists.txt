@@ -10,10 +10,16 @@ link_libraries(juce)
 include_directories(${JUCE_INCLUDE})
 
 set(HEADER_FILES
-    src/bbb_uart.h)
+    src/bbb_uart.h
+    src/SwitcherThread.h
+    src/artnetNode.h
+
+    )
 set(SOURCE_FILES
     src/main.cpp
-    src/bbb_uart.cpp)
+    src/bbb_uart.cpp
+    src/artnetNode.cpp
+    )
 
 add_executable(ArtnetDMX ${HEADER_FILES} ${SOURCE_FILES})
 
