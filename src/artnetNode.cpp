@@ -33,7 +33,7 @@ namespace artnetNode {
             if(opcode == 0x2000) { //ArtPoll
                 std::cout << "ArtPoll\n";
             } else if(opcode == 0x5000) { //ArtDmx
-                std::cout << "ArtDmx\n";
+                //std::cout << "ArtDmx\n";
                 
                 if(buflen < 20) {
                     std::cout << "ArtDmx packet too short\n";
@@ -52,13 +52,15 @@ namespace artnetNode {
                 
                 int u = buffer[14] & 0x03;
                 uthreads[u]->writeBuffer(&buffer[18], dmxlen);
-
+		
+		/*
                 printf("Valid DMX data: ");
 
                 for(int i = 0; i < 16; i++) {
                     printf("%02X ", buffer[18 + i]);
                 }
                 printf("\n");
+	 	*/
 
             } else if(opcode == 0x5100) { //ArtNzs
                 std::cout << "ArtNzs\n";
@@ -109,10 +111,11 @@ namespace artnetNode {
                     }
 
 					int bytesRead = dsocket.read(buffer, 4096, false);
-					
+		    /*		
                     printf("UDP received: %d bytes read. 0x%08X %08X %08X %08X\n", bytesRead,
                            ((uint32*)buffer)[0], ((uint32*)buffer)[1],((uint32*)buffer)[2],
 					       ((uint32*)buffer)[3]);
+	            */
 
                     if (bytesRead <= 0) {
 						std::cerr << "UDP read error\n";
