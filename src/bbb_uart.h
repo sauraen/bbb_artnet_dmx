@@ -19,15 +19,15 @@ class uArt
     public:
         
         /*
-         * Constructer 
+         * Constructor 
          */
         uArt(int uartNum);
         
         /* 
-         * Initializes Uart port
+         * Initializes UART port
          *
-         * Loads uart to cape manager, this requires that the proper uEnv.txt config.
-         * Because of this, must run program with elavated privaledges (sudo). 
+         * Loads UART to cape manager, this requires that the proper uEnv.txt config.
+         * Because of this, must run program with elavated privileges (sudo). 
          * Refer to README for further detailed. 
          * Then opens the port and sets the appropriate options with the baud rate we want
          * for DMX, as well as two stop bits.
@@ -45,7 +45,7 @@ class uArt
         int dmx_write(uint8* data, size_t len);
         
         /*
-         * Deconstructor
+         * Destructor
          * 
          * Closes uArt device. 
          */
@@ -57,18 +57,14 @@ class uArtThread : public Thread
 
     public:
         uArtThread(String name, int uartNumber);
-        
         virtual ~uArtThread();
         
         int init();
-	
-	    void writeBuffer(uint8* data, uint16 len=512);	
-        
-        void copyBuffer(uint8* destBuf, uint16 len=512);
-
         virtual void run() override;
-        
-        
+	
+	    void writeBuffer(const uint8* data, uint16 len=512);
+        void readBuffer(uint8* destBuf, uint16 len=512);
+
     private:
         String name;
         int uartNum;

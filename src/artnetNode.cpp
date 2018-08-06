@@ -12,7 +12,41 @@ namespace artnetNode {
         DatagramSocket sock(true);
         
         uint8 net, subnet;
-
+        
+        class ArtnetWatchdog : private Thread {
+        public:
+            ArtnetWatchdog() : Thread("ArtnetWatchdog") {
+                counter = 1000;
+                startThread();
+            }
+            
+            virtual ~ArtnetWatchdog(){
+                stopThread(100);
+            }
+            
+            void notifyWatchdog() {
+                if(counter >= 20){
+                    std::cout << "Began receiving Art-Net data\n";
+                }
+                counter = 0;
+            }
+            
+        private:
+            virtual void run() override {
+                while(!threadShouldExit()){
+                    if(counter == 20){
+                        std::cout << "Stopped receiving Art-Net data\n";
+                    }
+                    if(counter < 1000) ++counter;
+                    sleep(50);
+                }
+            }
+            
+            unsigned int counter;
+        };
+        
+        ArtnetWatchdog dog;
+        
         void packetReceived(uint8 *buffer, int buflen) {
 				
 			if (buflen < 12) {
@@ -20,9 +54,14 @@ namespace artnetNode {
                 return;
             }
             if (strncmp((char*)buffer, "Art-Net", 8) != 0) {
-                std::cerr << "Packet did not start with artnet\n";
+                std::cerr << "Packet did not start with \"Art-Net\\0\"\n";
                 return;
             }
+            
+            //Everything after this point counts as having received Art-Net data,
+            //even if it is internally invalid
+            dog.notifyWatchdog();
+            
             if (buffer[11] < 14) {
                 std::cerr << "Artnet Version less than 14\n";
                 return;
@@ -31,7 +70,7 @@ namespace artnetNode {
             uint16 opcode = ((uint16*)buffer)[4];
             
             if(opcode == 0x2000) { //ArtPoll
-                std::cout << "ArtPoll\n";
+                std::cout << "Received ArtPoll, reply not implemented yet\n";
             } else if(opcode == 0x5000) { //ArtDmx
                 //std::cout << "ArtDmx\n";
                 
@@ -53,56 +92,23 @@ namespace artnetNode {
                 int u = buffer[14] & 0x03;
                 uthreads[u]->writeBuffer(&buffer[18], dmxlen);
 		
-		/*
+		        /*
                 printf("Valid DMX data: ");
 
                 for(int i = 0; i < 16; i++) {
                     printf("%02X ", buffer[18 + i]);
                 }
                 printf("\n");
-	 	*/
-
+	 	        */
             } else if(opcode == 0x5100) { //ArtNzs
-                std::cout << "ArtNzs\n";
+                std::cout << "Received ArtNzs, handling not implemented yet\n";
             } else if(opcode == 0x6000) { //ArtAddress
-                std::cout << "ArtAddress\n";
+                std::cout << "Received ArtAddress, not implemented yet\n";
             } else {
-                printf("Op code = %04X\n", opcode);
+                printf("Received Art-Net with opcode = 0x%04X\n", opcode);
             }
-               
-     	
-
 		}
     	
-
-        class ArtnetWatchdog {
-
-        public:
-            ArtnetWatchdog() : timer(){};
-            
-            void notifyWatchdog() {
-                if (!started) {
-                    std::cout << "ArtnetWatchdog: Receiving DMX packet data\n";
-                }
-                
-                //TODO 
-
-            }
-
-        private:
-            Timer timer;
-            bool started;
-
-
-        }
-
-
-
-
-
-
-
-
         class UDPListener : public Thread {
 		
 		public:
@@ -140,11 +146,11 @@ namespace artnetNode {
                     }
 
 					int bytesRead = dsocket.read(buffer, 4096, false);
-		    /*		
+		            /*
                     printf("UDP received: %d bytes read. 0x%08X %08X %08X %08X\n", bytesRead,
                            ((uint32*)buffer)[0], ((uint32*)buffer)[1],((uint32*)buffer)[2],
 					       ((uint32*)buffer)[3]);
-	            */
+	                */
 
                     if (bytesRead <= 0) {
 						std::cerr << "UDP read error\n";
@@ -158,18 +164,9 @@ namespace artnetNode {
 			}
 		};
         
-
         UDPListener *listener = nullptr;
 
-           
-
-		
     }
-
-			
-
-
-
 
     int Init() {
         net = 0;
@@ -215,20 +212,19 @@ namespace artnetNode {
         for(int i = 0; i < 4; i++) delete uthreads[i];
     }
 
-    void copyUniBuf(uint8* destBuf, uint16 universeNum, uint16 len) {
+    void readUniverse(uint8* destBuf, uint16 universeNum, uint16 len) {
         
         if (destBuf == nullptr) {
-            std::cout << "copyUniBuf: buff is null\n";
+            std::cout << "readUniverse: buff is null\n";
             return;
         }
         
         if (universeNum < 0 || universeNum > 3) {
-            std::cout << "copyUniBuf: invalid universe num\n";
+            std::cout << "readUniverse: invalid universe num\n";
             return;
         }
-
-
-        uthreads[universeNum]->copyBuffer(destBuf, len);     
+        
+        uthreads[universeNum]->readBuffer(destBuf, len);
     }
 
 

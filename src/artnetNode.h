@@ -7,6 +7,6 @@ namespace artnetNode {
 
     void Finalize();
     
-    void copyUniBuf(uint8* destBuf, uint16 universeNum, uint16 len=512);
+    void readUniverse(uint8* destBuf, uint16 universeNum, uint16 len=512);
 
 }

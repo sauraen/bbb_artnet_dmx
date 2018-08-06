@@ -12,7 +12,7 @@ void printBuf(uint8* buf) {
     
     printf("    ");
     for (int i = 0; i < 16; i++) {
-        printf("%02d ", i + 1);
+        printf("%02d ", i);
     }
     
     std::cout << "\n";
@@ -38,17 +38,13 @@ void printBuf(uint8* buf) {
 
 
 int main()
-{   
-	
-    
-      
+{
     if(artnetNode::Init() != 0) return -1;
     
     std::cout << "Initialized, Running\n";
-    std::cout << "Type Universe number (0-3) and press enter to get state of universe\n" <<
-                  "Type exit to finish running program\n";
+    std::cout << "Type universe number (0-3) and press enter to print the state of the universe\n" <<
+                  "Type \"exit\" to shut down the program\n";
     
-	
     std::string line; 
     uint8 dataBuf[512]; //buffer to hold data for current state of a given universe
 
@@ -60,7 +56,7 @@ int main()
         }
         
         if(line[1] == 0 && line[0] >= '0' && line[0] <= '3') {
-            artnetNode::copyUniBuf(dataBuf, line[0] - '0');  
+            artnetNode::readUniverse(dataBuf, line[0] - '0');  
             printBuf(dataBuf);
         } else if(strcmp(line.c_str(), "exit") == 0) {
             std::cout << "\nExiting. . . \n";
@@ -73,8 +69,6 @@ int main()
         }
         
     }   
-    
-    
     
     return 0;
 }

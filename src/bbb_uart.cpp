@@ -132,7 +132,7 @@ int uArtThread::init()
     return 0;
 }
 
-void uArtThread::writeBuffer(uint8* data, uint16 len) {
+void uArtThread::writeBuffer(const uint8* data, uint16 len) {
     
 	const ScopedReadLock myScopedLock(myLock);
 	buffer[0] = 0;
@@ -141,7 +141,7 @@ void uArtThread::writeBuffer(uint8* data, uint16 len) {
     
 }
 
-void uArtThread::copyBuffer(uint8* destBuf, uint16 len) {
+void uArtThread::readBuffer(uint8* destBuf, uint16 len) {
     
     const ScopedReadLock myScopedLock(myLock);
     
