@@ -12,7 +12,7 @@ void printBuf(uint8* buf) {
     
     printf("    ");
     for (int i = 0; i < 16; i++) {
-        printf("%02d ", i);
+        printf("%02d ", i + 1);
     }
     
     std::cout << "\n";
@@ -25,7 +25,7 @@ void printBuf(uint8* buf) {
 
     
     for (int i = 0; i < 32; i++) {
-        printf("%03d|", (i * 16));
+        printf("%03d|", (i * 16) + 1);
 
         for(int j = 0; j < 16; j++) {
             printf("%02X ", (unsigned char) buf[currByte]);
@@ -45,7 +45,7 @@ int main()
     if(artnetNode::Init() != 0) return -1;
     
     std::cout << "Initialized, Running\n";
-    std::cout << "Type Universe number (1-4) and press enter to get state of universe\n" <<
+    std::cout << "Type Universe number (0-3) and press enter to get state of universe\n" <<
                   "Type exit to finish running program\n";
     
 	

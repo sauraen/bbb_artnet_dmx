@@ -74,6 +74,35 @@ namespace artnetNode {
 
 		}
     	
+
+        class ArtnetWatchdog {
+
+        public:
+            ArtnetWatchdog() : timer(){};
+            
+            void notifyWatchdog() {
+                if (!started) {
+                    std::cout << "ArtnetWatchdog: Receiving DMX packet data\n";
+                }
+                
+                //TODO 
+
+            }
+
+        private:
+            Timer timer;
+            bool started;
+
+
+        }
+
+
+
+
+
+
+
+
         class UDPListener : public Thread {
 		
 		public:
@@ -132,7 +161,7 @@ namespace artnetNode {
 
         UDPListener *listener = nullptr;
 
-        
+           
 
 		
     }
