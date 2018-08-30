@@ -46,6 +46,129 @@ namespace artnetNode {
         };
         
         ArtnetWatchdog dog;
+
+        class RoomLights : private Thread {
+        public:
+            RoomLights(uArtThread *uth) : Thread("RoomLights"), uthread(uth) {
+                running = true;
+                
+                nstates = 4;
+                states = new uint8*[nstates];
+                for(int i=0; i<nstates; ++i){
+                    states[i] = new uint8[512];
+                    uint8* s = states[i];
+                    s[5] = 0x00; //UV
+                    s[6] = 0xFF; //Dimmer
+                    s[7] = 0xFF; //Strobe
+                    switch(i){
+                    case 1:
+                        s[0] = 0xFF; //Red
+                        s[1] = 0xD0; //Green
+                        s[2] = 0x00; //Blue
+                        s[3] = 0xFF; //White
+                        s[4] = 0xFF; //Amber
+                        break;
+                    case 2:
+                        s[0] = 0x80; //Red
+                        s[1] = 0x80; //Green
+                        s[2] = 0x00; //Blue
+                        s[3] = 0xFF; //White
+                        s[4] = 0xFF; //Amber
+                        break;
+                    case 3:
+                        s[0] = 0x00; //Red
+                        s[1] = 0x00; //Green
+                        s[2] = 0x00; //Blue
+                        s[3] = 0xFF; //White
+                        s[4] = 0x00; //Amber
+                        break;
+                    default:
+                        s[0] = 0xFF; //Red
+                        s[1] = 0xFF; //Green
+                        s[2] = 0xFF; //Blue
+                        s[3] = 0xFF; //White
+                        s[4] = 0xFF; //Amber
+                        break;
+                    }
+                    //Copy to all fixtures
+                    for(int j=8; j<512; ++j){
+                        s[j] = s[j&7];
+                    }
+                }
+                
+                statefrom = stateto = 0;
+                fadevalue = 1.0f;
+                fadetime = 1.0f;
+                
+                startThread();
+            }
+            virtual ~RoomLights(){
+                stopThread(3 * frameperiodms);
+                
+                for(int i=0; i<nstates; ++i){
+                    delete[] states[i];
+                }
+                delete[] states;
+            }
+            
+            void gotMessage(String key, String value){
+                const ScopedWriteLock swl(lock);
+                if(key.equalsIgnoreCase("state")){
+                    statefrom = stateto;
+                    stateto = value.getIntValue();
+                    fadevalue = 0.0f;
+                }else if(key.equalsIgnoreCase("fadetime")){
+                    fadetime = value.getFloatValue();
+                }
+            }
+            
+            void releaseUniverse(){
+                const ScopedWriteLock swl(lock);
+                running = false;
+            }
+        private:
+            virtual void run() override {
+                uint8 *tempstate = new uint8[512];
+                while(!threadShouldExit()){
+                    {
+                        const ScopedWriteLock swl(lock);
+                        if(running){
+                            //TODO: other things like time
+                            
+                            //Fade between states
+                            fadevalue += ((float)frameperiodms * 0.001f) / fadetime;
+                            if(fadevalue > 1.0f) fadevalue = 1.0f;
+                            
+                            //Show faded state
+                            for(int i=0; i<512; ++i){
+                                float a = (float)states[statefrom][i];
+                                float b = (float)states[stateto][i];
+                                tempstate[i] = (uint8)(a * (1.0f - fadevalue)
+                                        + b * fadevalue);
+                            }
+                            uthread->writeBuffer(tempstate, 512);
+                        }
+                    }
+                    sleep(frameperiodms);
+                }
+                delete[] tempstate;
+            }
+            
+            uArtThread *uthread;
+            ReadWriteLock lock;
+            bool running;
+            const float frameperiodms = 10;
+            
+            uint8 **states;
+            int nstates;
+            int statefrom, stateto;
+            float fadevalue;
+            
+            float fadetime;
+        };
+        
+        RoomLights *roomLights;
+        const static int roomLightsUniverse = 3;
         
         void packetReceived(uint8 *buffer, int buflen) {
 				
@@ -71,6 +194,37 @@ namespace artnetNode {
             
             if(opcode == 0x2000) { //ArtPoll
                 std::cout << "Received ArtPoll, reply not implemented yet\n";
+            }else if(opcode == 0x2400){ //ArtCommand
+                if(buflen < 16){
+                    std::cerr << "ArtCommand packet less than 16 bytes\n";
+                    return;
+                }
+                uint16 slen = ((uint16)buffer[14] << 8) | buffer[15];
+                if(buflen < 16 + slen){
+                    std::cerr << "ArtCommand packet too small for message inside\n";
+                    return;
+                }
+                if(slen > 512){
+                    std::cerr << "ArtCommand packet with message > 512 bytes\n";
+                    return;
+                }
+                String m = String::createStringFromData(&buffer[16], slen);
+                StringArray cmds = StringArray::fromTokens(m, "&", "");
+                for(int i=0; i<cmds.size(); ++i){
+                    String cmd = cmds[i];
+                    if(!cmd.contains("=")){
+                        std::cerr << "ArtCommand command \"" << cmd << "\" invalid\n";
+                        continue;
+                    }
+                    String key = cmd.upToFirstOccurrenceOf("=", false, true);
+                    String value = cmd.fromFirstOccurrenceOf("=", false, true);
+                    if(key.startsWithIgnoreCase("roomlights.")){
+                        key = key.fromFirstOccurrenceOf(".", false, true); //Cut off prefix & dot
+                        std::cout << "Valid roomlights command \"" << key << "=" << value << "\"\n";
+                        roomLights->gotMessage(key, value);
+                    }
+                    
+                }
             } else if(opcode == 0x5000) { //ArtDmx
                 //std::cout << "ArtDmx\n";
                 
@@ -90,6 +244,11 @@ namespace artnetNode {
                 }
                 
                 int u = buffer[14] & 0x03;
+                
+                if(u == roomLightsUniverse){
+                    roomLights->releaseUniverse();
+                }
+                
                 uthreads[u]->writeBuffer(&buffer[18], dmxlen);
 		
 		        /*
@@ -191,6 +350,7 @@ namespace artnetNode {
             return -1;
         }
         
+        roomLights = new RoomLights(uthreads[roomLightsUniverse]);
         
         if(!sock.bindToPort(0x1936)) {
             std::cerr << "DatagramSocket failed to bind to port 0x1936\n";
@@ -208,6 +368,8 @@ namespace artnetNode {
         if (listener != nullptr) delete listener;
         
         sock.shutdown();
+        
+        if(roomLights != nullptr) delete roomLights;
         
         for(int i = 0; i < 4; i++) delete uthreads[i];
     }
