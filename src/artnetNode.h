@@ -8,5 +8,5 @@ namespace artnetNode {
     void Finalize();
     
     void readUniverse(uint8* destBuf, uint16 universeNum, uint16 len=512);
-
+    
 }

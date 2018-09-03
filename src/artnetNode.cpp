@@ -1,6 +1,8 @@
 #include "artnetNode.h"
+
 #include "bbb_uart.h"
-#include <juce.h>
+#include "ArtnetWatchdog.h"
+
 #include <cstring>
 #include <cstdio>
 
@@ -13,164 +15,29 @@ namespace artnetNode {
         
         uint8 net, subnet;
         
-        class ArtnetWatchdog : private Thread {
-        public:
-            ArtnetWatchdog() : Thread("ArtnetWatchdog") {
-                counter = 1000;
-                startThread();
-            }
-            
-            virtual ~ArtnetWatchdog(){
-                stopThread(100);
-            }
-            
-            void notifyWatchdog() {
-                if(counter >= 20){
-                    std::cout << "Began receiving Art-Net data\n";
-                }
-                counter = 0;
-            }
-            
-        private:
-            virtual void run() override {
-                while(!threadShouldExit()){
-                    if(counter == 20){
-                        std::cout << "Stopped receiving Art-Net data\n";
-                    }
-                    if(counter < 1000) ++counter;
-                    sleep(50);
-                }
-            }
-            
-            unsigned int counter;
-        };
-        
         ArtnetWatchdog dog;
 
-        class RoomLights : private Thread {
-        public:
-            RoomLights(uArtThread *uth) : Thread("RoomLights"), uthread(uth) {
-                running = true;
-                
-                nstates = 4;
-                states = new uint8*[nstates];
-                for(int i=0; i<nstates; ++i){
-                    states[i] = new uint8[512];
-                    uint8* s = states[i];
-                    s[5] = 0x00; //UV
-                    s[6] = 0xFF; //Dimmer
-                    s[7] = 0xFF; //Strobe
-                    switch(i){
-                    case 1:
-                        s[0] = 0xFF; //Red
-                        s[1] = 0xD0; //Green
-                        s[2] = 0x00; //Blue
-                        s[3] = 0xFF; //White
-                        s[4] = 0xFF; //Amber
-                        break;
-                    case 2:
-                        s[0] = 0x80; //Red
-                        s[1] = 0x80; //Green
-                        s[2] = 0x00; //Blue
-                        s[3] = 0xFF; //White
-                        s[4] = 0xFF; //Amber
-                        break;
-                    case 3:
-                        s[0] = 0x00; //Red
-                        s[1] = 0x00; //Green
-                        s[2] = 0x00; //Blue
-                        s[3] = 0xFF; //White
-                        s[4] = 0x00; //Amber
-                        break;
-                    default:
-                        s[0] = 0xFF; //Red
-                        s[1] = 0xFF; //Green
-                        s[2] = 0xFF; //Blue
-                        s[3] = 0xFF; //White
-                        s[4] = 0xFF; //Amber
-                        break;
-                    }
-                    //Copy to all fixtures
-                    for(int j=8; j<512; ++j){
-                        s[j] = s[j&7];
-                    }
-                }
-                
-                statefrom = stateto = 0;
-                fadevalue = 1.0f;
-                fadetime = 1.0f;
-                
-                startThread();
-            }
-            virtual ~RoomLights(){
-                stopThread(3 * frameperiodms);
-                
-                for(int i=0; i<nstates; ++i){
-                    delete[] states[i];
-                }
-                delete[] states;
-            }
-            
-            void gotMessage(String key, String value){
-                const ScopedWriteLock swl(lock);
-                if(key.equalsIgnoreCase("state")){
-                    statefrom = stateto;
-                    stateto = value.getIntValue();
-                    fadevalue = 0.0f;
-                }else if(key.equalsIgnoreCase("fadetime")){
-                    fadetime = value.getFloatValue();
-                }
-            }
-            
-            void releaseUniverse(){
-                const ScopedWriteLock swl(lock);
-                running = false;
-            }
-        private:
-            virtual void run() override {
-                uint8 *tempstate = new uint8[512];
-                while(!threadShouldExit()){
-                    {
-                        const ScopedWriteLock swl(lock);
-                        if(running){
-                            //TODO: other things like time
-                            
-                            //Fade between states
-                            fadevalue += ((float)frameperiodms * 0.001f) / fadetime;
-                            if(fadevalue > 1.0f) fadevalue = 1.0f;
-                            
-                            //Show faded state
-                            for(int i=0; i<512; ++i){
-                                float a = (float)states[statefrom][i];
-                                float b = (float)states[stateto][i];
-                                tempstate[i] = (uint8)(a * (1.0f - fadevalue)
-                                        + b * fadevalue);
-                            }
-                            uthread->writeBuffer(tempstate, 512);
-                        }
-                    }
-                    sleep(frameperiodms);
-                }
-                delete[] tempstate;
-            }
-            
-            uArtThread *uthread;
-            ReadWriteLock lock;
-            bool running;
-            const float frameperiodms = 10;
-            
-            uint8 **states;
-            int nstates;
-            int statefrom, stateto;
-            float fadevalue;
-            
-            float fadetime;
-        };
-        
         RoomLights *roomLights;
         const static int roomLightsUniverse = 3;
         
-        void packetReceived(uint8 *buffer, int buflen) {
+        void sendArtCommand(const String &cmd, const String &senderIP, int senderport){
+            std::cout << "Sending ArtCommand \"" << cmd << "\"\n";
+            char* buffer = new char[16+512];
+            strncpy(buffer, "Art-Net", 8);
+            buffer[8] = 0x00;
+            buffer[9] = 0x24; //Command
+            buffer[10] = 0x00;
+            buffer[11] = 14; //Art-Net version
+            buffer[12] = 0x7F;
+            buffer[13] = 0xFF; //Experimental ESTA code
+            int slen = cmd.copyToUTF8(buffer, 512);
+            buffer[14] = slen >> 8;
+            buffer[15] = slen & 0xFF;
+            sock.write(senderIP, senderport, cmd, 16 + slen);
+            delete[] buffer;
+        }
+        
+        void packetReceived(uint8 *buffer, int buflen, const String &senderIP, int senderport) {
 				
 			if (buflen < 12) {
                 std::cerr << "Packet less than 12 bytes\n";
@@ -221,7 +88,10 @@ namespace artnetNode {
                     if(key.startsWithIgnoreCase("roomlights.")){
                         key = key.fromFirstOccurrenceOf(".", false, true); //Cut off prefix & dot
                         std::cout << "Valid roomlights command \"" << key << "=" << value << "\"\n";
-                        roomLights->gotMessage(key, value);
+                        String res = roomLights->gotMessage(key, value);
+                        if(res.isNotEmpty()){
+                            sendArtCommand(res, senderIP, senderport);
+                        }
                     }
                     
                 }
@@ -303,8 +173,11 @@ namespace artnetNode {
                         std::cout << "UDPListener waitUntilReady failed\n";
                         return;
                     }
-
-					int bytesRead = dsocket.read(buffer, 4096, false);
+                    
+                    String senderIP;
+                    int senderport;
+                    
+					int bytesRead = dsocket.read(buffer, 4096, false, senderIP, senderport);
 		            /*
                     printf("UDP received: %d bytes read. 0x%08X %08X %08X %08X\n", bytesRead,
                            ((uint32*)buffer)[0], ((uint32*)buffer)[1],((uint32*)buffer)[2],
@@ -317,7 +190,7 @@ namespace artnetNode {
 						return;
 					}
 					
-					packetReceived(buffer, bytesRead);
+					packetReceived(buffer, bytesRead, senderIP, senderport);
 					
 				}
 			}
@@ -388,7 +261,6 @@ namespace artnetNode {
         
         uthreads[universeNum]->readBuffer(destBuf, len);
     }
-
 
 }
 

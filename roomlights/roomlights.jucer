@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="vgf3Sb" name="roomlights" displaySplashScreen="0" reportAppUsage="0"
+              splashScreenColour="Dark" projectType="guiapp" version="1.0.0"
+              bundleIdentifier="com.sauraen.roomlights" includeBinaryInAppConfig="1"
+              cppLanguageStandard="14" companyCopyright="Copyright (C) 2018 Sauraen"
+              jucerVersion="5.3.2" companyName="Sauraen" companyWebsite="sauraen.com"
+              companyEmail="sauraen@gmail.com">
+  <MAINGROUP id="d6wTBD" name="roomlights">
+    <GROUP id="{33B77EA8-FC58-B9D5-99DC-FEF2D94D145B}" name="Source">
+      <FILE id="syx6jG" name="main.cpp" compile="1" resource="0" file="Source/main.cpp"/>
+      <FILE id="dKbVLt" name="StartupApplication.cpp" compile="1" resource="0"
+            file="Source/StartupApplication.cpp"/>
+      <FILE id="eeyYYz" name="StartupApplication.h" compile="0" resource="0"
+            file="Source/StartupApplication.h"/>
+      <FILE id="jzGtWw" name="TrayIcon.cpp" compile="1" resource="0" file="Source/TrayIcon.cpp"/>
+      <FILE id="gl9AF3" name="TrayIcon.h" compile="0" resource="0" file="Source/TrayIcon.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <EXPORTFORMATS>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" enablePluginBinaryCopyStep="1" isDebug="1" optimisation="1"
+                       linkTimeOptimisation="0" targetName="roomlights"/>
+        <CONFIGURATION name="Release" enablePluginBinaryCopyStep="1" isDebug="0" optimisation="3"
+                       linkTimeOptimisation="1" targetName="roomlights"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../Juce/Juce5/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+    <VS2017 targetFolder="Builds/VisualStudio2017">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"
+                       linkTimeOptimisation="0" isDebug="1" optimisation="1" targetName="roomlights"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"
+                       linkTimeOptimisation="1" isDebug="0" optimisation="3" targetName="roomlights"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../Juce/Juce5/modules"/>
+      </MODULEPATHS>
+    </VS2017>
+    <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" linkTimeOptimisation="0"
+                       targetName="roomlights"/>
+        <CONFIGURATION name="Release" isDebug="0" optimisation="3" linkTimeOptimisation="1"
+                       targetName="roomlights"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../../Juce/Juce5/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../Juce/Juce5/modules"/>
+      </MODULEPATHS>
+    </LINUX_MAKE>
+  </EXPORTFORMATS>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+  </MODULES>
+  <JUCEOPTIONS/>
+  <LIVE_SETTINGS>
+    <LINUX/>
+  </LIVE_SETTINGS>
+</JUCERPROJECT>
