@@ -38,20 +38,16 @@ int uArt::init() {
         return -1;
     }
     
-
     uartTerm.c_cflag &= ~(CSIZE | PARENB);
     uartTerm.c_cflag |= CS8;
-    
     uartTerm.c_cflag &= ~CBAUD; //Ignoring baudrate
     uartTerm.c_cflag |= BOTHER; //termios2, other baud rate
     uartTerm.c_cflag |= CLOCAL; //Ignore control lines
     uartTerm.c_cflag |= CSTOPB; //two stop bits set
     
-    
     uartTerm.c_oflag &= ~OPOST;
     uartTerm.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-   
-
+    
     uartTerm.c_ospeed = baudRate; //Setting output rate
     
     /* Writing termios options to uart */
@@ -133,45 +129,31 @@ int uArtThread::init()
 }
 
 void uArtThread::writeBuffer(const uint8* data, uint16 len) {
-    
 	const ScopedReadLock myScopedLock(myLock);
 	buffer[0] = 0;
-
 	memcpy(&buffer[1], data, len);
     
 }
 
 void uArtThread::readBuffer(uint8* destBuf, uint16 len) {
-    
     const ScopedReadLock myScopedLock(myLock);
-    
-    memcpy(destBuf, &buffer[1], len);   
-
+    memcpy(destBuf, &buffer[1], len);
 }
-
 
 uArtThread::~uArtThread()
 {
-    delete[] buffer;
     stopThread(100); //forcibly killed after 100 milliseconds
+    delete[] buffer;
 }
 
 void uArtThread::run() {
-    
-    while (!threadShouldExit())
-    {
+    while (!threadShouldExit()){
         wait(10);
-        
         {
             const ScopedReadLock myScopedLock(myLock);
-	
             if (uart.dmx_write(buffer, 513) == -1) {
                 std::cerr << "uartThread:run():" << name << ": failed to write" << std::endl;
             }
-
         }
     }
 }
-
-
-
