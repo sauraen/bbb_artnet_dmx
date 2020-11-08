@@ -3,7 +3,7 @@
 
 namespace artnetNode {
     
-    int Init();
+    int Init(bool release_dmx);
 
     void Finalize();
     

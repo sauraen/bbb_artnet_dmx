@@ -142,18 +142,18 @@ void uArtThread::readBuffer(uint8* destBuf, uint16 len) {
 
 uArtThread::~uArtThread()
 {
-    stopThread(100); //forcibly killed after 100 milliseconds
+    stopThread(50); //forcibly killed after 50 milliseconds
     delete[] buffer;
 }
 
 void uArtThread::run() {
     while (!threadShouldExit()){
-        wait(10);
         {
             const ScopedReadLock myScopedLock(myLock);
             if (uart.dmx_write(buffer, 513) == -1) {
                 std::cerr << "uartThread:run():" << name << ": failed to write" << std::endl;
             }
         }
+        wait(10);
     }
 }

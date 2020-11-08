@@ -11,9 +11,8 @@ include_directories(${JUCE_INCLUDE})
 
 set(HEADER_FILES
     src/bbb_uart.h
-    src/SwitcherThread.h
+    #src/SwitcherThread.h
     src/artnetNode.h
-
     )
 set(SOURCE_FILES
     src/main.cpp
@@ -22,4 +21,3 @@ set(SOURCE_FILES
     )
 
 add_executable(ArtnetDMX ${HEADER_FILES} ${SOURCE_FILES})
-

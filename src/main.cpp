@@ -37,9 +37,22 @@ void printBuf(uint8* buf) {
 
 
 
-int main()
+int main(int argc, char **argv)
 {
-    if(artnetNode::Init() != 0) return -1;
+    bool release_dmx = false;
+    if(argc == 2){
+        String p(argv[1]);
+        if(p == "release_dmx" || p == "reldmx"){
+            release_dmx = true;
+        }else{
+            std::cout << "Unknown command line option: " << p << "\n";
+            return -1;
+        }
+    }else if(argc != 1){
+        std::cout << "Usage: ArtnetDMX [release_dmx]\n";
+        return -1;
+    }
+    if(artnetNode::Init(release_dmx) != 0) return -1;
     
     std::cout << "Initialized, Running\n";
     std::cout << "Type universe number (0-3) and press enter to print the state of the universe\n" <<
@@ -72,7 +85,3 @@ int main()
     
     return 0;
 }
-
-
-
-
